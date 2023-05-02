@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { nanoid } from 'nanoid'
+import { nanoid } from 'nanoid';
 
 /** @param {{ url: string }} props */
 export function DevPanel({ url }) {
 	/** @type {{ type: 'def' | 'client' | 'server', content: string, key: string }[]} */
 	const initialContent = [];
 	const [content, setContent] = useState(initialContent);
+	const [multiline, setMultiline] = useState(false);
 
 	const { mouseMove, getResizeProps } = useWindowResize({
 		direction: 'vertical'
@@ -55,29 +56,55 @@ export function DevPanel({ url }) {
 	return (
 		<aside
 			style={{ height: getDevtoolHeight(mouseMove) }}
-			className="fixed bottom-0 left-0 right-0 bg-white rounded-2  overflow-y-scroll"
+			className="fixed bottom-0 left-0 right-0 bg-white rounded-2 overflow-y-scroll"
 		>
 			<div {...getResizeProps()} className="w-full h-4 cursor-row-resize select-none">
 				<hr className="border-t-2" />
 			</div>
-			<h2 className="font-bold p-3 pt-0">Dev panel</h2>
-			<ul className="p-0 whitespace-pre-wrap">
-				{content.map(({ type, content, key }) => (
-					<div
-						key={key}
-						className={
-							'px-3 py-1 ' +
-							(type === 'def' ? 'bg-blue-100' : type === 'client' ? 'bg-green-100' : 'bg-orange-200')
-						}
-					>
-						{type === 'def' ? <h3 className="font-bold text-blue-900">Definition</h3> : null}
-						{type === 'client' ? <h3 className="font-bold text-green-900">Client import</h3> : null}
-						{type === 'server' ? <h3 className="font-bold text-orange-900">Server stream</h3> : null}
-						<li style={{ listStyle: 'none' }}>
-							{content}
-						</li>
-					</div>
-				))}
+			<div className="flex justify-between">
+				<h2 className="font-bold inline p-3 pt-0">Dev panel</h2>
+				<label className="p-3 pt-0">
+					<input
+						type="checkbox"
+						checked={multiline}
+						onChange={(e) => setMultiline(e.target.checked)}
+					/>{' '}
+					Multiline
+				</label>
+			</div>
+			<ul className="font-mono p-0 text-xs whitespace-pre-wrap">
+				{content.map(({ type, content, key }) => {
+					let text = content;
+
+					if (type === 'server' && multiline) {
+						const [id, ...json] = content.split(':');
+						text =
+							id +
+							':' +
+							JSON.stringify(JSON.parse(json.join(':')), null, 2)
+								.split('\n')
+								.join('\n  ');
+					}
+
+					return (
+						<div
+							key={key}
+							className={
+								'px-3 py-1 ' +
+								(type === 'def'
+									? 'bg-blue-100'
+									: type === 'client'
+									? 'bg-green-100'
+									: 'bg-orange-200')
+							}
+						>
+							{type === 'def' && <h3 className="font-bold text-blue-900">Definition</h3>}
+							{type === 'client' && <h3 className="font-bold text-green-900">Client import</h3>}
+							{type === 'server' && <h3 className="font-bold text-orange-900">Server stream</h3>}
+							<li style={{ listStyle: 'none' }}>{text}</li>
+						</div>
+					);
+				})}
 			</ul>
 		</aside>
 	);
@@ -90,7 +117,8 @@ const toLocalStorageKey = (/** @type {Direction} */ direction) =>
 const DEFAULT_HEIGHT = 260;
 
 /**
- * @param {{ direction: Direction }} */
+ * @param {{ direction: Direction }} params
+ */
 function useWindowResize({ direction }) {
 	const [mouseMove, setMouseMove] = useState(getInitialSize(direction));
 	const [isMouseDown, setIsMouseDown] = useState(false);

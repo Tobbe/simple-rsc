@@ -53,36 +53,40 @@ export async function build() {
 							// i.e. import paths are './Component', not './Component.jsx'
 							const absoluteSrc = new URL(resolveSrc(path) + jsxExt);
 
-							if (fs.existsSync(absoluteSrc)) {
-								// Check for `"use client"` annotation. Short circuit if not found.
-								const contents = await fs.promises.readFile(absoluteSrc, 'utf-8');
-								if (!USE_CLIENT_ANNOTATIONS.some((annotation) => contents.startsWith(annotation)))
-									return;
-
-								clientEntryPoints.add(fileURLToPath(absoluteSrc));
-								const absoluteDist = new URL(resolveClientDist(path) + '.js');
-
-								// Path the browser will import this client-side component from.
-								// This will be fulfilled by the server router.
-								// @see './index.js'
-								const id = `/dist/client/${path}.js`;
-
-								clientComponentMap[id] = {
-									id,
-									chunks: [],
-									name: 'default', // TODO support named exports
-									async: true
-								};
-
-								return {
-									// Encode the client component module in the import URL.
-									// This is a... wacky solution to avoid import middleware.
-									path: `data:text/javascript,${encodeURIComponent(
-										getClientComponentModule(id, absoluteDist.href)
-									)}`,
-									external: true
-								};
+							if (!fs.existsSync(absoluteSrc)) {
+								// Wrong extension, skip this one
+								continue;
 							}
+
+							// Check for `"use client"` annotation. Short circuit if not found.
+							const contents = await fs.promises.readFile(absoluteSrc, 'utf-8');
+							if (!USE_CLIENT_ANNOTATIONS.some((annotation) => contents.startsWith(annotation))) {
+								return;
+							}
+
+							clientEntryPoints.add(fileURLToPath(absoluteSrc));
+							const absoluteDist = new URL(resolveClientDist(path) + '.js');
+
+							// Path the browser will import this client-side component from.
+							// This will be fulfilled by the server router.
+							// @see './index.js'
+							const id = `/dist/client/${path}.js`;
+
+							clientComponentMap[id] = {
+								id,
+								chunks: [],
+								name: 'default', // TODO support named exports
+								async: true
+							};
+
+							return {
+								// Encode the client component module in the import URL.
+								// This is a... wacky solution to avoid import middleware.
+								path: `data:text/javascript,${encodeURIComponent(
+									getClientComponentModule(id, absoluteDist.href)
+								)}`,
+								external: true
+							};
 						}
 					});
 				}

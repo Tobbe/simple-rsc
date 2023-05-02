@@ -43,6 +43,7 @@ server.get('/', async () => {
 		new URL('./templates/index.html', import.meta.url),
 		'utf-8'
 	);
+
 	return new Response(html, {
 		headers: { 'Content-type': 'text/html' }
 	});

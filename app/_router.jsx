@@ -8,13 +8,13 @@ import { DevPanel } from './utils/dev/DevPanel.jsx';
 import './utils/dev/live-reload.js';
 
 // HACK: map webpack resolution to native ESM
-// @ts-expect-error Property '__webpack_require__' does not exist on type 'Window & typeof globalThis'.
-window.__webpack_require__ = async (id) => {
+globalThis.__webpack_require__ = async (/** @type {string} */ id) => {
 	return import(id);
 };
 
-// @ts-expect-error
-const root = createRoot(document.getElementById('root'));
+const rootElement = document.getElementById('root');
+if (!rootElement) throw new Error('No root element');
+const root = createRoot(rootElement);
 root.render(
 	<StrictMode>
 		<Router />
@@ -22,8 +22,7 @@ root.render(
 );
 
 let callbacks = [];
-// @ts-expect-error Property 'router' does not exist on type 'Window & typeof globalThis'.
-window.router = {
+globalThis.router = {
 	navigate(/** @type {string} */ url) {
 		window.history.replaceState({}, '', url);
 		callbacks.forEach((cb) => cb());
